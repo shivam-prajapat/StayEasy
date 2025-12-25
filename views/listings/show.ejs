@@ -1,0 +1,68 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="container mt-4 mb-5">
+  <h3 class="text-center mb-4">Listing Details</h3>
+
+  <div class="card shadow-lg border-0 p-3">
+    <div class="row g-4 align-items-start">
+
+      <!-- Image Section -->
+      <div class="col-md-6">
+        <div style="width: 100%; height: 320px; overflow: hidden; border-radius: 8px;">
+          <img
+            src="<%= listing.image.url %>"
+            alt="listing_image"
+            style="
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            "
+          >
+        </div>
+      </div>
+
+      <!-- Details Section -->
+      <div class="col-md-6">
+
+        <h4 class="mb-2"><%= listing.title %></h4>
+
+        <p class="fs-5 fw-semibold text-success mb-3">
+          &#8377; <%= listing.price.toLocaleString('en-IN') %>
+        </p>
+
+        <p class="text-muted mb-3">
+          <%= listing.description %>
+        </p>
+
+        <ul class="list-group list-group-flush mb-4">
+          <li class="list-group-item px-0">
+            📍 <strong>Location:</strong> <%= listing.location %>
+          </li>
+          <li class="list-group-item px-0">
+            🌍 <strong>Country:</strong> <%= listing.country %>
+          </li>
+        </ul>
+
+        <div class="d-flex gap-3">
+          <a
+            href="/listings/<%= listing._id %>/edit"
+            class="btn btn-outline-dark"
+          >
+            ✏️ Edit
+          </a>
+
+          <form
+            method="POST"
+            action="/listings/<%= listing._id %>?_method=DELETE"
+          >
+            <button class="btn btn-danger">
+              🗑 Delete
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
