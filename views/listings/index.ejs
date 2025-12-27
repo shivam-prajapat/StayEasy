@@ -16,7 +16,14 @@
           <div class="card-body">
             <h5 class="card-title"><%= listing.title %></h5>
             <p class="card-text"><%= listing.description %></p>
-            <p class="card-text"><strong>Price:&#8377 <%= listing.price.toLocaleString("en-IN") %></strong>/night</p>
+           <p class="card-text">
+  <strong>
+    Price: ₹
+    <%= listing.price != null ? Number(listing.price).toLocaleString("en-IN") : "N/A" %>
+  </strong>
+  /night
+</p>
+
             <p class="card-text"><%= listing.location %>, <%= listing.country %></p>
           </div>
         </div>
