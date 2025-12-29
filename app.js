@@ -1,91 +1,171 @@
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
-const MONGO_URL = "mongodb://127.0.0.1:27017/StayEasy";
-const Listing = require("./models/listing");
 const path = require("path");
 const methodOverride = require("method-override");
-const ejsMate=require('ejs-mate');
+const ejsMate = require("ejs-mate");
 
+const Listing = require("./models/listing");
+const Review = require("./models/review.js")
+const ExpressError = require("./utils/ExpressError");
+const wrapAsync = require("./utils/wrapAsync");
 
-main()
-  .then(() => {
-    console.log("connected to DB");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+const MONGO_URL = "mongodb://127.0.0.1:27017/StayEasy";
 
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.engine('ejs',ejsMate);
-app.use(express.urlencoded({ extended: true }));
-app.use(methodOverride("_method"));
-
-app.use(express.static(path.join(__dirname,"/public")));
-
-
+// ------------------ DB CONNECTION ------------------
 async function main() {
   await mongoose.connect(MONGO_URL);
 }
+main()
+  .then(() => console.log("Connected to DB"))
+  .catch((err) => console.log(err));
+
+// ------------------ VIEW ENGINE ------------------
+app.engine("ejs", ejsMate);
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+
+// ------------------ MIDDLEWARE ------------------
+app.use(express.urlencoded({ extended: true }));
+app.use(methodOverride("_method"));
+app.use(express.static(path.join(__dirname, "public")));
+
+// ------------------ SERVER ------------------
 app.listen(8080, () => {
-  console.log("server is listening to port 8080");
+  console.log("Server running on port 8080");
 });
 
+// ------------------ ROUTES ------------------
 app.get("/", (req, res) => {
-  res.send("hi,I am root");
+  res.send("Hi, I am root");
 });
 
-// Index Route
-app.get("/listings", async (req, res) => {
-  const allListings = await Listing.find({});
-  res.render("listings/index.ejs", { allListings });
-});
+// INDEX
+app.get(
+  "/listings",
+  wrapAsync(async (req, res) => {
+    const allListings = await Listing.find({});
+    res.render("listings/index.ejs", { allListings });
+  })
+);
 
-//New Route
-
+// NEW
 app.get("/listings/new", (req, res) => {
   res.render("listings/new.ejs");
 });
 
-//Show Route
+// SHOW
+// SHOW ✅
+app.get(
+  "/listings/:id",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
 
-app.get("/listings/:id", async (req, res) => {
-  let { id } = req.params;
-  const listing = await Listing.findById(id);
-  res.render("listings/show.ejs", { listing });
-});
+    const listing = await Listing.findById(id).populate("reviews");
 
-//Create route
+    if (!listing) throw new ExpressError(404, "Listing not found");
 
-app.post("/listings", async (req, res) => {
-  const newListing = new Listing(req.body.listing);
-  await newListing.save();
-  res.redirect("/listings");
-});
-
-//Edit route
-app.get("/listings/:id/edit", async (req, res) => {
-  let { id } = req.params;
-  const listing = await Listing.findById(id);
-  res.render("listings/edit.ejs", { listing });
-});
-
-//Update Route
-
-app.put("/listings/:id", async (req, res) => {
-  let { id } = req.params;
-  await Listing.findByIdAndUpdate(id, { ...req.body.listing });
-  res.redirect(`/listings/${id}`);
-});
+    res.render("listings/show.ejs", { listing });
+  })
+);
 
 
-//Delete Route
-
-app.delete("/listings/:id",async(req,res)=>{
-    let {id}=req.params;
-    let deletedListing=await Listing.findByIdAndDelete(id);
-    console.log("deletedlisting");
+// CREATE
+app.post(
+  "/listings",
+  wrapAsync(async (req, res) => {
+    const newListing = new Listing(req.body.listing);
+    await newListing.save();
     res.redirect("/listings");
+  })
+);
 
-})
+// EDIT
+app.get(
+  "/listings/:id/edit",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id);
+    if (!listing) throw new ExpressError(404, "Listing not found");
+    res.render("listings/edit.ejs", { listing });
+  })
+);
+
+// UPDATE
+app.put(
+  "/listings/:id",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const listing = await Listing.findByIdAndUpdate(
+      id,
+      { ...req.body.listing },
+      { new: true, runValidators: true }
+    );
+    if (!listing) throw new ExpressError(404, "Listing not found");
+    res.redirect(`/listings/${id}`);
+  })
+);
+
+// DELETE
+app.delete(
+  "/listings/:id",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const deletedListing = await Listing.findByIdAndDelete(id);
+    if (!deletedListing) throw new ExpressError(404, "Listing not found");
+    res.redirect("/listings");
+  })
+);
+//REVIEWS
+
+app.post(
+  "/listings/:id/reviews",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const { rating, comment } = req.body.review;
+
+
+    const listing = await Listing.findById(id);
+    if (!listing) throw new ExpressError(404, "Listing not found");
+
+    const review = new Review({ rating, comment });
+
+    listing.reviews.push(review);
+
+    await review.save();
+    await listing.save();
+
+    res.redirect(`/listings/${id}`);
+  })
+);
+ // DELETE REVIEWS
+
+ app.delete(
+  "/listings/:id/reviews/:reviewId",
+  wrapAsync(async (req, res) => {
+    const { id, reviewId } = req.params;
+
+    await Listing.findByIdAndUpdate(id, {
+      $pull: { reviews: reviewId }
+    });
+
+    await Review.findByIdAndDelete(reviewId);
+
+    res.redirect(`/listings/${id}`);
+  })
+);
+
+
+
+// ------------------ 404 HANDLER ------------------
+app.use((req, res, next) => {
+  next(new ExpressError(404, "Page Not Found"));
+});
+
+// ------------------ ERROR HANDLER ------------------
+app.use((err, req, res, next) => {
+  const { statusCode = 500 } = err;
+  res.status(statusCode).render("error.ejs", { err });
+});
+
+ 

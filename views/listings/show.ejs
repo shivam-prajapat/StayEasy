@@ -1,36 +1,37 @@
 <% layout("/layouts/boilerplate") %>
 
-<div class="container mt-4 mb-5">
-  <h3 class="text-center mb-4">Listing Details</h3>
+<div class="container my-5">
 
-  <div class="card shadow-lg border-0 p-3">
+  <!-- ================= LISTING DETAILS ================= -->
+  <div class="card shadow-lg border-0 p-4 mb-5">
     <div class="row g-4 align-items-start">
 
-      <!-- Image Section -->
+      <!-- Image -->
       <div class="col-md-6">
-        <div style="width: 100%; height: 320px; overflow: hidden; border-radius: 8px;">
+        <div class="rounded overflow-hidden" style="height: 340px;">
           <img
-            src="<%= listing.image.url %>"
-            alt="listing_image"
-            style="
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
-            "
+            src="<%= listing.image?.url || 'https://via.placeholder.com/600x400' %>"
+            alt="listing image"
+            class="w-100 h-100"
+            style="object-fit: cover;"
           >
         </div>
       </div>
 
-      <!-- Details Section -->
+      <!-- Info -->
       <div class="col-md-6">
 
-        <h4 class="mb-2"><%= listing.title %></h4>
+        <h3 class="fw-bold mb-2"><%= listing.title %></h3>
 
-        <p class="fs-5 fw-semibold text-success mb-3">
-          &#8377; <%= listing.price.toLocaleString('en-IN') %>
+        <p class="fs-4 fw-semibold text-success mb-3">
+          ₹
+          <%= listing.price != null 
+                ? Number(listing.price).toLocaleString("en-IN") 
+                : "N/A" %>
+          <span class="fs-6 text-muted">/ night</span>
         </p>
 
-        <p class="text-muted mb-3">
+        <p class="text-muted mb-4">
           <%= listing.description %>
         </p>
 
@@ -44,17 +45,13 @@
         </ul>
 
         <div class="d-flex gap-3">
-          <a
-            href="/listings/<%= listing._id %>/edit"
-            class="btn btn-outline-dark"
-          >
+          <a href="/listings/<%= listing._id %>/edit"
+             class="btn btn-outline-dark">
             ✏️ Edit
           </a>
 
-          <form
-            method="POST"
-            action="/listings/<%= listing._id %>?_method=DELETE"
-          >
+          <form method="POST"
+                action="/listings/<%= listing._id %>?_method=DELETE">
             <button class="btn btn-danger">
               🗑 Delete
             </button>
@@ -62,7 +59,124 @@
         </div>
 
       </div>
+    </div>
+  </div>
+
+  <!-- ================= REVIEW FORM ================= -->
+  <div class="card shadow-sm border-0 mb-5">
+    <div class="card-body p-4">
+
+      <h4 class="fw-bold mb-1">Write a Review</h4>
+      <p class="text-muted mb-4">
+        Share your experience to help others
+      </p>
+
+      <form class="needs-validation"
+            action="/listings/<%= listing._id %>/reviews"
+            method="POST"
+            novalidate>
+
+        <!-- Rating -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold d-block mb-2">
+            Your Rating
+          </label>
+
+          <div class="star-rating mb-1">
+            <% for (let i = 5; i >= 1; i--) { %>
+              <input
+                type="radio"
+                id="star<%= i %>"
+                name="review[rating]"
+                value="<%= i %>"
+                required
+              >
+              <label for="star<%= i %>">★</label>
+            <% } %>
+          </div>
+
+          <div class="invalid-feedback d-block">
+            Please select a rating.
+          </div>
+        </div>
+
+        <!-- Comment -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">
+            Your Review
+          </label>
+
+          <textarea
+            class="form-control"
+            name="review[comment]"
+            rows="4"
+            placeholder="What did you like or dislike?"
+            required
+          ></textarea>
+
+          <div class="invalid-feedback">
+            Please write a short review.
+          </div>
+        </div>
+
+        <div class="text-end">
+          <button class="btn btn-dark px-4">
+            Submit Review
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= REVIEWS LIST ================= -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+
+      <h4 class="fw-bold mb-3">
+        Reviews
+        <span class="text-muted fs-6">
+          (<%= listing.reviews.length %>)
+        </span>
+      </h4>
+
+      <% if (listing.reviews.length === 0) { %>
+        <p class="text-muted">
+          No reviews yet. Be the first to review!
+        </p>
+      <% } %>
+
+     <% for (let review of listing.reviews) { %>
+  <div class="border rounded p-3 mb-3 d-flex justify-content-between align-items-start">
+
+    <div>
+      <!-- Stars -->
+      <div class="text-warning fs-5 mb-1">
+        <% for (let i = 0; i < review.rating; i++) { %>★<% } %>
+        <% for (let i = review.rating; i < 5; i++) { %>☆<% } %>
+      </div>
+
+      <!-- Comment -->
+      <p class="mb-0">
+        <%= review.comment %>
+      </p>
+    </div>
+
+    <!-- DELETE BUTTON -->
+    <form
+      action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE"
+      method="POST"
+    >
+      <button class="btn btn-sm btn-outline-danger">
+        🗑
+      </button>
+    </form>
+
+  </div>
+<% } %>
+
 
     </div>
   </div>
+
 </div>

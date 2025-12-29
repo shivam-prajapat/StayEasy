@@ -63,3 +63,29 @@
     opacity:0.2;
     background-color: white;
 }
+.star-rating {
+  display: inline-flex;
+  flex-direction: row-reverse;
+  font-size: 2.2rem;
+  gap: 0.3rem;
+}
+
+.star-rating input {
+  display: none;
+}
+
+.star-rating label {
+  color: #ddd;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.2s ease;
+}
+
+.star-rating label:hover {
+  transform: scale(1.15);
+}
+
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: #f5c518;
+}
